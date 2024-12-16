@@ -1,0 +1,68 @@
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" | "\u{000B}" | "\u{000C}" | "\u{0085}" | "\u{200E}" | "\u{200F}" | "\u{2028}" | "\u{2029}" }
+COMMENT = _{ "//" ~ (!"\n" ~ ANY)* ~ "\n" }
+
+program = { SOI ~ (expression)* ~ EOI }
+
+expression = _{
+    bin_op |
+    function_def |
+    assignment |
+    if_expr |
+    rep_expr |
+    print_expr |
+    method_call |
+    un_op |
+    term
+}
+
+// Function definition
+function_def = { "def" ~ identifier ~ "(" ~ (typed_identifier ~ ("," ~ typed_identifier)*)? ~ ")" ~ block }
+
+// Types
+type_annotation = { 
+    "int" | 
+    "float" | 
+    "string" | 
+    "list" ~ "<" ~ type_annotation ~ ">" |
+    "tuple" ~ "<" ~ type_annotation ~ ">"
+}
+
+// Identifiers
+identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
+typed_identifier = { identifier ~ ":" ~ type_annotation }
+
+// Values
+value = _{ float | integer | identifier }
+integer = @{ "-"? ~ ASCII_DIGIT+ }
+float = @{ "-"? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
+
+// Blocks
+block = { "{" ~ expression* ~ "}" }
+
+// Assignment
+assignment = { typed_identifier ~ "=" ~ expression }
+
+// Method call
+method_call = { identifier ~ "(" ~ (expression ~ ("," ~ expression)*)? ~ ")" }
+
+// Print expression
+print_expr = { "print" ~ "(" ~ expression ~ ")" }
+
+// If expression
+if_expr = { "if" ~ expression ~ block ~ ("else" ~ block)? }
+
+// Rep expression
+rep_expr = { "rep" ~ expression ~ block }
+
+// Binary operations
+bin_op = { term ~ (operator ~ term)* }
+term = _{ value | "(" ~ expression ~ ")" | method_call }
+operator = @{ 
+    "<=" | ">=" | "==" | "!=" | "<" | ">" |
+    "&&" | "||" |
+    "+" | "-" | "*" | "/"
+}
+
+// Unary operations
+un_op = { un_operator ~ term }
+un_operator = { "!" | "-" }

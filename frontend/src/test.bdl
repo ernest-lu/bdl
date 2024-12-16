@@ -1,0 +1,9 @@
+val x: int = 3
+val y: int = 4
+val z: int = x + y
+
+print("hi me")
+
+def f(x, y) {
+    return x + y
+}

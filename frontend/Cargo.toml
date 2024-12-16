@@ -1,0 +1,12 @@
+[package]
+name = "bdl-frontend"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+logos = "0.13"
+thiserror = "1.0"
+pest = "2.6"
+pest_derive = "2.6"
+
+

@@ -1,15 +1,16 @@
-WHITESPACE = _{ " " | "\t" | "\r" | "\n" | "\u{000B}" | "\u{000C}" | "\u{0085}" | "\u{200E}" | "\u{200F}" | "\u{2028}" | "\u{2029}" }
+WHITESPACE = _{ " " | "\t" | "\r" | "\u{000B}" | "\u{000C}" | "\u{0085}" | "\u{200E}" | "\u{200F}" | "\u{2028}" | "\u{2029}" }
 COMMENT = _{ "//" ~ (!"\n" ~ ANY)* ~ "\n" }
 
-program = { SOI ~ (expression)* ~ EOI }
+program = { SOI ~ ((expression ~ NEWLINE) | NEWLINE | COMMENT )* ~ EOI }
 
 expression = _{
-    bin_op |
-    function_def |
+    print_expr |
+    return_expr |
     assignment |
+    function_def |
+    bin_op |
     if_expr |
     rep_expr |
-    print_expr |
     method_call |
     un_op |
     term
@@ -32,21 +33,35 @@ identifier = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
 typed_identifier = { identifier ~ ":" ~ type_annotation }
 
 // Values
-value = _{ float | integer | identifier }
+value = _{ float | integer | identifier | string_literal }
+string_literal = {
+    "\""    
+    ~ (
+        !("\"")    
+        ~ ANY
+    )*
+    ~ "\"" // match a quotation mark and the number signs
+}
+
 integer = @{ "-"? ~ ASCII_DIGIT+ }
 float = @{ "-"? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
 
 // Blocks
-block = { "{" ~ expression* ~ "}" }
+block = { "{" ~ NEWLINE ~ (expression ~ NEWLINE)* ~ "}" }
 
 // Assignment
-assignment = { typed_identifier ~ "=" ~ expression }
+VAL = _{ "val" }
+VAR = _{ "var" }
+assignment = { VAL ~ typed_identifier ~ "=" ~ expression | VAR ~ typed_identifier ~ "=" ~ expression }
 
 // Method call
 method_call = { identifier ~ "(" ~ (expression ~ ("," ~ expression)*)? ~ ")" }
 
 // Print expression
 print_expr = { "print" ~ "(" ~ expression ~ ")" }
+
+// Return expression
+return_expr = { "return" ~ expression }
 
 // If expression
 if_expr = { "if" ~ expression ~ block ~ ("else" ~ block)? }
@@ -66,3 +81,5 @@ operator = @{
 // Unary operations
 un_op = { un_operator ~ term }
 un_operator = { "!" | "-" }
+
+NEWLINE = _{ "\n" }

@@ -1,5 +1,3 @@
-use std::f32::consts::E;
-
 #[derive(Debug, Clone)]
 pub struct Program {
     pub expressions: Vec<Expr>,

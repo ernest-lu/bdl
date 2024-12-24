@@ -6,6 +6,7 @@ version = 3
 name = "bdl-frontend"
 version = "0.1.0"
 dependencies = [
+ "crustal",
  "logos",
  "pest",
  "pest_derive",
@@ -41,6 +42,12 @@ checksum = "16b80225097f2e5ae4e7179dd2266824648f3e2f49d9134d584b76389d31c4c3"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "crustal"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ea799adc624a4c902e54c74ff4236ba0c4d2d3047534711b7e2029b3485ee463"
 
 [[package]]
 name = "crypto-common"

@@ -8,5 +8,6 @@ logos = "0.13"
 thiserror = "1.0"
 pest = "2.6"
 pest_derive = "2.6"
+crustal = "0.3.5"
 
 

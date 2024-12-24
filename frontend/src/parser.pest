@@ -70,7 +70,7 @@ if_expr = { "if" ~ expression ~ block ~ ("else" ~ block)? }
 rep_expr = { "rep" ~ expression ~ block }
 
 // Binary operations
-bin_op = { term ~ (operator ~ term)* }
+bin_op = { term ~ (operator ~ term)+ }
 term = _{ value | "(" ~ expression ~ ")" | method_call }
 operator = @{ 
     "<=" | ">=" | "==" | "!=" | "<" | ">" |

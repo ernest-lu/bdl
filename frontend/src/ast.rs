@@ -34,9 +34,24 @@ pub struct TypedIdentifier {
     pub associated_type: Type,
 }
 
+impl TypedIdentifier {
+    pub fn new(value: Identifier, associated_type: Type) -> TypedIdentifier {
+        TypedIdentifier {
+            value,
+            associated_type,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct IntegerLiteral {
     pub value: i128,
+}
+
+impl IntegerLiteral {
+    pub fn new(value: i128) -> IntegerLiteral {
+        IntegerLiteral { value }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -44,9 +59,21 @@ pub struct FloatLiteral {
     pub value: f64,
 }
 
+impl FloatLiteral {
+    pub fn new(value: f64) -> FloatLiteral {
+        FloatLiteral { value }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Identifier {
     pub value: String,
+}
+
+impl Identifier {
+    pub fn new(value: String) -> Identifier {
+        Identifier { value }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -55,15 +82,45 @@ pub struct AssignmentExpr {
     pub value: Box<Expr>,
 }
 
+impl AssignmentExpr {
+    pub fn new(target: TypedIdentifier, value: Expr) -> AssignmentExpr {
+        AssignmentExpr {
+            target,
+            value: Box::new(value),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct MethodCallExpr {
     pub method_name: Identifier,
     pub args: Vec<Expr>,
 }
 
+impl MethodCallExpr {
+    pub fn new(method_name: Identifier, args: Vec<Expr>) -> MethodCallExpr {
+        MethodCallExpr { method_name, args }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct PrintExpr {
     pub arg: Box<Expr>,
+}
+
+impl PrintExpr {
+    pub fn new(arg: Expr) -> PrintExpr {
+        PrintExpr { arg: Box::new(arg) }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct NoneExpr;
+
+impl NoneExpr {
+    pub fn new() -> NoneExpr {
+        NoneExpr
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -73,10 +130,29 @@ pub struct IfExpr {
     pub else_block: Option<Vec<Expr>>,
 }
 
+impl IfExpr {
+    pub fn new(condition: Expr, then_block: Vec<Expr>, else_block: Option<Vec<Expr>>) -> IfExpr {
+        IfExpr {
+            condition: Box::new(condition),
+            then_block,
+            else_block,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct RepExpr {
     pub num_iterations: Box<Expr>,
     pub body: Box<Expr>,
+}
+
+impl RepExpr {
+    pub fn new(num_iterations: Expr, body: Expr) -> RepExpr {
+        RepExpr {
+            num_iterations: Box::new(num_iterations),
+            body: Box::new(body),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -86,10 +162,29 @@ pub struct BinOpExpr {
     pub right: Box<Expr>,
 }
 
+impl BinOpExpr {
+    pub fn new(left: Expr, op: String, right: Expr) -> BinOpExpr {
+        BinOpExpr {
+            left: Box::new(left),
+            op,
+            right: Box::new(right),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct UnOpExpr {
     pub op: String,
     pub arg: Box<Expr>,
+}
+
+impl UnOpExpr {
+    pub fn new(op: String, arg: Expr) -> UnOpExpr {
+        UnOpExpr {
+            op,
+            arg: Box::new(arg),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -108,12 +203,102 @@ pub enum Expr {
     NoneExpr(NoneExpr),
 }
 
-#[derive(Debug, Clone)]
-pub struct NoneExpr;
+impl Expr {
+    pub fn Integer(self) -> Option<IntegerLiteral> {
+        if let Expr::Integer(i) = self {
+            Some(i)
+        } else {
+            None
+        }
+    }
 
-pub enum AstNode {
-    Program(Program),
-    Expr(Expr),
+    pub fn Float(self) -> Option<FloatLiteral> {
+        if let Expr::Float(f) = self {
+            Some(f)
+        } else {
+            None
+        }
+    }
+
+    pub fn Identifier(self) -> Option<Identifier> {
+        if let Expr::Identifier(i) = self {
+            Some(i)
+        } else {
+            None
+        }
+    }
+
+    pub fn AssignmentExpr(self) -> Option<AssignmentExpr> {
+        if let Expr::AssignmentExpr(a) = self {
+            Some(a)
+        } else {
+            None
+        }
+    }
+
+    pub fn MethodCallExpr(self) -> Option<MethodCallExpr> {
+        if let Expr::MethodCallExpr(m) = self {
+            Some(m)
+        } else {
+            None
+        }
+    }
+
+    pub fn PrintExpr(self) -> Option<PrintExpr> {
+        if let Expr::PrintExpr(p) = self {
+            Some(p)
+        } else {
+            None
+        }
+    }
+
+    pub fn IfExpr(self) -> Option<IfExpr> {
+        if let Expr::IfExpr(i) = self {
+            Some(i)
+        } else {
+            None
+        }
+    }
+
+    pub fn RepExpr(self) -> Option<RepExpr> {
+        if let Expr::RepExpr(r) = self {
+            Some(r)
+        } else {
+            None
+        }
+    }
+
+    pub fn BinOp(self) -> Option<BinOpExpr> {
+        if let Expr::BinOp(b) = self {
+            Some(b)
+        } else {
+            None
+        }
+    }
+
+    pub fn UnOp(self) -> Option<UnOpExpr> {
+        if let Expr::UnOp(u) = self {
+            Some(u)
+        } else {
+            None
+        }
+    }
+
+    pub fn FunctionDef(self) -> Option<FunctionDef> {
+        if let Expr::FunctionDef(f) = self {
+            Some(f)
+        } else {
+            None
+        }
+    }
+
+    pub fn NoneExpr(self) -> Option<NoneExpr> {
+        if let Expr::NoneExpr(n) = self {
+            Some(n)
+        } else {
+            None
+        }
+    }
 }
 
 impl Expr {
@@ -135,6 +320,13 @@ impl Expr {
     }
 }
 
+pub enum AstNode {
+    Program(Program),
+    Expr(Expr),
+    TypedIdentifier(TypedIdentifier),
+    Type(Type),
+}
+
 impl AstNode {
     pub fn get_type(&self) -> Type {
         match self {
@@ -144,6 +336,40 @@ impl AstNode {
                 .unwrap_or(&Expr::NoneExpr(NoneExpr))
                 .get_type(),
             AstNode::Expr(expr) => expr.get_type(),
+            AstNode::TypedIdentifier(identifier) => identifier.associated_type.clone(),
+            AstNode::Type(t) => t.clone(),
+        }
+    }
+
+    pub fn Expr(self) -> Option<Expr> {
+        if let AstNode::Expr(e) = self {
+            Some(e)
+        } else {
+            None
+        }
+    }
+
+    pub fn Program(self) -> Option<Program> {
+        if let AstNode::Program(p) = self {
+            Some(p)
+        } else {
+            None
+        }
+    }
+
+    pub fn TypedIdentifier(self) -> Option<TypedIdentifier> {
+        if let AstNode::TypedIdentifier(i) = self {
+            Some(i)
+        } else {
+            None
+        }
+    }
+
+    pub fn Type(self) -> Option<Type> {
+        if let AstNode::Type(t) = self {
+            Some(t)
+        } else {
+            None
         }
     }
 }

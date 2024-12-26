@@ -11,6 +11,7 @@ expression = _{
     bin_op |
     if_expr |
     rep_expr |
+    list_expr |
     method_call |
     un_op |
     term
@@ -68,6 +69,9 @@ if_expr = { "if" ~ expression ~ block ~ ("else" ~ block)? }
 
 // Rep expression
 rep_expr = { "rep" ~ expression ~ block }
+
+// Lists of expr
+list_expr = { "[" ~ expression ~ ("," ~ expression)* ~ "]" }
 
 // Binary operations
 bin_op = { term ~ (operator ~ term)+ }

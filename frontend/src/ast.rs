@@ -55,6 +55,17 @@ impl IntegerLiteral {
 }
 
 #[derive(Debug, Clone)]
+pub struct StringLiteral {
+    pub value: String,
+}
+
+impl StringLiteral {
+    pub fn new(value: String) -> StringLiteral {
+        StringLiteral { value }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct FloatLiteral {
     pub value: f64,
 }
@@ -156,6 +167,17 @@ impl RepExpr {
 }
 
 #[derive(Debug, Clone)]
+pub struct ListExpr {
+    pub elems: Vec<Expr>,
+}
+
+impl ListExpr {
+    pub fn new(elems: Vec<Expr>) -> ListExpr {
+        ListExpr { elems }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct BinOpExpr {
     pub left: Box<Expr>,
     pub op: String,
@@ -191,12 +213,14 @@ impl UnOpExpr {
 pub enum Expr {
     Integer(IntegerLiteral),
     Float(FloatLiteral),
+    String(StringLiteral),
     Identifier(Identifier),
     AssignmentExpr(AssignmentExpr),
     MethodCallExpr(MethodCallExpr),
     PrintExpr(PrintExpr),
     IfExpr(IfExpr),
     RepExpr(RepExpr),
+    ListExpr(ListExpr),
     BinOp(BinOpExpr),
     UnOp(UnOpExpr),
     FunctionDef(FunctionDef),
@@ -215,6 +239,14 @@ impl Expr {
     pub fn Float(self) -> Option<FloatLiteral> {
         if let Expr::Float(f) = self {
             Some(f)
+        } else {
+            None
+        }
+    }
+
+    pub fn String(self) -> Option<StringLiteral> {
+        if let Expr::String(s) = self {
+            Some(s)
         } else {
             None
         }
@@ -306,12 +338,14 @@ impl Expr {
         match self {
             Expr::Integer(_) => Type::Int,
             Expr::Float(_) => Type::Float,
+            Expr::String(_) => Type::String,
             Expr::Identifier(_) => todo!(),
             Expr::AssignmentExpr(_) => todo!(),
             Expr::MethodCallExpr(_) => todo!(),
             Expr::PrintExpr(_) => todo!(),
             Expr::IfExpr(_) => todo!(),
             Expr::RepExpr(_) => todo!(),
+            Expr::ListExpr(_) => todo!(),
             Expr::BinOp(_) => todo!(),
             Expr::UnOp(expr) => expr.arg.get_type(),
             Expr::FunctionDef(fd) => todo!(),
@@ -325,6 +359,7 @@ pub enum AstNode {
     Expr(Expr),
     TypedIdentifier(TypedIdentifier),
     Type(Type),
+    VecExpr(Vec<Expr>),
 }
 
 impl AstNode {
@@ -338,6 +373,7 @@ impl AstNode {
             AstNode::Expr(expr) => expr.get_type(),
             AstNode::TypedIdentifier(identifier) => identifier.associated_type.clone(),
             AstNode::Type(t) => t.clone(),
+            AstNode::VecExpr(exprs) => todo!(),
         }
     }
 
@@ -368,6 +404,14 @@ impl AstNode {
     pub fn Type(self) -> Option<Type> {
         if let AstNode::Type(t) = self {
             Some(t)
+        } else {
+            None
+        }
+    }
+
+    pub fn VecExpr(self) -> Option<Vec<Expr>> {
+        if let AstNode::VecExpr(e) = self {
+            Some(e)
         } else {
             None
         }

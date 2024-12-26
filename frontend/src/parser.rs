@@ -12,8 +12,11 @@ pub struct BdlParser;
 
 use crate::ast::Expr;
 use crate::ast::IntegerLiteral;
+use crate::ast::ListExpr;
 use crate::ast::PrintExpr;
 use crate::ast::Program;
+use crate::ast::StringLiteral;
+use crate::ast::TypedIdentifier;
 use pest::iterators::Pair;
 
 fn build_ast_from_expr(pair: Pair<Rule>) -> Option<AstNode> {
@@ -27,10 +30,42 @@ fn build_ast_from_expr(pair: Pair<Rule>) -> Option<AstNode> {
         }
         Rule::expression => build_ast_from_expr(pair.into_inner().next()?),
         Rule::typed_identifier => {
-            let nodes = pair.into_inner().collect::<Vec<Pair<Rule>>>();
-            assert!(nodes.len() == 2);
+            let mut inner_nodes = pair.into_inner().collect::<Vec<Pair<Rule>>>();
+            assert!(inner_nodes.len() == 2);
+            let mut type_of_id = build_ast_from_expr(inner_nodes.pop()?)?.Type()?;
+            let mut id = build_ast_from_expr(inner_nodes.pop()?)?
+                .Expr()?
+                .Identifier()?;
+            Some(AstNode::TypedIdentifier(TypedIdentifier {
+                value: id,
+                associated_type: type_of_id,
+            }))
         }
-        Rule::identifier => None,
+        Rule::type_annotation => {
+            let p_clone = pair.clone();
+            let mut inner = pair.into_inner();
+            let type_name = p_clone.as_str().to_string();
+            if (inner.len() >= 1) {
+                let inner_type = build_ast_from_expr(inner.next()?)?.Type()?;
+                if type_name.starts_with("list") {
+                    Some(AstNode::Type(ast::Type::List(Box::new(inner_type))))
+                } else if type_name.starts_with("tuple") {
+                    Some(AstNode::Type(ast::Type::Tuple(Box::new(inner_type))))
+                } else {
+                    None
+                }
+            } else {
+                match type_name.as_str() {
+                    "int" => Some(AstNode::Type(ast::Type::Int)),
+                    "float" => Some(AstNode::Type(ast::Type::Float)),
+                    "string" => Some(AstNode::Type(ast::Type::String)),
+                    _ => None,
+                }
+            }
+        }
+        Rule::identifier => Some(AstNode::Expr(Expr::Identifier(ast::Identifier {
+            value: pair.as_str().to_string(),
+        }))),
         Rule::assignment => {
             let mut inner_rules = pair.into_inner().collect::<Vec<Pair<Rule>>>();
             // typed identifier and expression
@@ -52,6 +87,39 @@ fn build_ast_from_expr(pair: Pair<Rule>) -> Option<AstNode> {
         Rule::integer => {
             let int_value = pair.as_str().parse::<i128>().unwrap();
             Some(AstNode::Expr(Expr::Integer(IntegerLiteral::new(int_value))))
+        }
+        Rule::list_expr => {
+            let mut inner = pair.into_inner();
+            let mut elements = Vec::new();
+            while let Some(element) = inner.next() {
+                let element = build_ast_from_expr(element)?;
+                elements.push(element.Expr()?);
+            }
+            Some(AstNode::Expr(Expr::ListExpr(ListExpr { elems: elements })))
+        }
+        Rule::string_literal => {
+            let string_value = pair.as_str().trim_matches('"').to_string();
+            Some(AstNode::Expr(Expr::String(ast::StringLiteral {
+                value: string_value,
+            })))
+        }
+        Rule::float => {
+            let float_value = pair.as_str().parse::<f64>().unwrap();
+            Some(AstNode::Expr(Expr::Float(ast::FloatLiteral {
+                value: float_value,
+            })))
+        }
+        Rule::function_def => {
+            let mut inner_rules = pair.into_inner().collect::<Vec<Pair<Rule>>>();
+
+            None
+        }
+        Rule::block => {
+            let vec = pair
+                .into_inner()
+                .map(|rule| build_ast_from_expr(rule)?.Expr()?)
+                .collect();
+            None
         }
         _ => None,
     }

@@ -1,5 +1,5 @@
 val x: int = 3
-val y: int = 4
+val y: list<int> = [4]
 val z: int = x + y
 print("hi me")
 def f(x: int, y: int) {

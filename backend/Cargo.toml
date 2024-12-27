@@ -1,0 +1,8 @@
+[package]
+name = "bdl-backend"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bdl-frontend = { path = "../frontend" }
+crustal = "0.3"

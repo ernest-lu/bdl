@@ -369,6 +369,7 @@ impl Expr {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum AstNode {
     Program(Program),
     Expr(Expr),

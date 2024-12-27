@@ -167,6 +167,19 @@ impl RepExpr {
 }
 
 #[derive(Debug, Clone)]
+pub struct ReturnExpr {
+    pub value: Box<Expr>,
+}
+
+impl ReturnExpr {
+    pub fn new(value: Expr) -> ReturnExpr {
+        ReturnExpr {
+            value: Box::new(value),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct ListExpr {
     pub elems: Vec<Expr>,
 }
@@ -225,6 +238,7 @@ pub enum Expr {
     UnOp(UnOpExpr),
     FunctionDef(FunctionDef),
     NoneExpr(NoneExpr),
+    ReturnExpr(ReturnExpr),
 }
 
 impl Expr {
@@ -340,6 +354,7 @@ impl Expr {
             Expr::Float(_) => Type::Float,
             Expr::String(_) => Type::String,
             Expr::Identifier(_) => todo!(),
+            Expr::ReturnExpr(_) => todo!(),
             Expr::AssignmentExpr(_) => todo!(),
             Expr::MethodCallExpr(_) => todo!(),
             Expr::PrintExpr(_) => todo!(),

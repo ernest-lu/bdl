@@ -110,16 +110,45 @@ fn build_ast_from_expr(pair: Pair<Rule>) -> Option<AstNode> {
             })))
         }
         Rule::function_def => {
+            let inner_rules = pair.into_inner().collect::<Vec<Pair<Rule>>>();
+            let name = build_ast_from_expr(inner_rules.get(0)?.clone())?
+                .Expr()?
+                .Identifier()?;
+            let args = inner_rules[1..inner_rules.len() - 1]
+                .iter()
+                .filter_map(|rule| build_ast_from_expr(rule.clone())?.TypedIdentifier())
+                .collect::<Vec<TypedIdentifier>>();
+            let body = build_ast_from_expr(inner_rules.last()?.clone())?.VecExpr()?;
+            Some(AstNode::Expr(Expr::FunctionDef(ast::FunctionDef {
+                name,
+                args,
+                body,
+            })))
+        }
+        Rule::return_expr => {
+            let expr = build_ast_from_expr(pair.into_inner().next()?)?.Expr()?;
+            Some(AstNode::Expr(Expr::ReturnExpr(ast::ReturnExpr {
+                value: Box::new(expr),
+            })))
+        }
+        Rule::bin_op => {
             let mut inner_rules = pair.into_inner().collect::<Vec<Pair<Rule>>>();
-
-            None
+            let right = build_ast_from_expr(inner_rules.pop()?)?.Expr();
+            let op = inner_rules.pop()?.as_str().to_string();
+            let left = build_ast_from_expr(inner_rules.pop()?)?.Expr();
+            Some(AstNode::Expr(Expr::BinOp(ast::BinOpExpr {
+                left: Box::new(left?),
+                op,
+                right: Box::new(right?),
+            })))
         }
         Rule::block => {
-            let vec = pair
+            let vec_rules = pair
                 .into_inner()
-                .map(|rule| build_ast_from_expr(rule)?.Expr()?)
-                .collect();
-            None
+                .filter_map(|rule| build_ast_from_expr(rule)?.Expr())
+                .collect::<Vec<Expr>>();
+            println!("block: {}", &vec_rules.len());
+            Some(AstNode::VecExpr(vec_rules))
         }
         _ => None,
     }

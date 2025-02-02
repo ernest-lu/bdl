@@ -1,230 +1,177 @@
+
 use bdl_frontend::ast::{
     AssignmentExpr, BinOpExpr, Expr, FloatLiteral, FunctionDef, Identifier, IfExpr, IntegerLiteral,
-    ListExpr, MethodCallExpr, PrintExpr, Program, RepExpr, ReturnExpr, StringLiteral, Type,
-    UnOpExpr,
+    ListExpr, MethodCallExpr, PrintExpr, ReassignmentExpr, RepExpr, ReturnExpr, StringLiteral,
+    Type, UnOpExpr,
 };
-use crustal::{cpp, CppProgram};
 
-pub struct CodeGenerator {
-    program: CppProgram,
+use crustal as CG;
+
+pub fn generate(ast: &bdl_frontend::ast::Program) -> String {
+    // Add standard includes
+    let mut scope = CG::Scope::new();
+    scope.new_include("bits/stdc++.h", true);
+
+    // The language only generates a singular main function.
+    // Everything is pushed into the main function from here
+    let main_fn = scope.new_function("main", CG::Type::new_int32());
+    let body = main_fn.body();
+
+    // Generate code for each expression
+    for expr in &ast.expressions {}
+    scope.to_string()
 }
 
-impl CodeGenerator {
-    pub fn new() -> Self {
-        CodeGenerator {
-            program: CppProgram::new(),
+enum ExprResult {
+    integer(i64),
+    float(f64),
+    string(String),
+    list(Vec<ExprResult>),
+    none,
+}
+
+// optionally returns a CG::Expression
+fn process_expression(context: &mut CG::Block, expr: &Expr) -> Option<CG::Expr> {
+    match expr {
+        // doesn't do anything
+        // TODO: Support different integers
+        Expr::Integer(i) => Some(CG::Expr::new_num(i.value as u64)),
+        Expr::AssignmentExpr(assign) => {
+            generate_assignment(context, assign);
+            None
+        }
+        Expr::ReassignmentExpr(reassign) => {
+            generate_reassignment(context, reassign);
+            None
+        }
+        Expr::MethodCallExpr(method) => {
+            generate_method_call(context, method);
+            None
+        }
+        Expr::PrintExpr(print) => {
+            generate_print(context, print);
+            None
+        }
+        Expr::IfExpr(if_expr) => {
+            generate_if(context, if_expr);
+            None
+        }
+        Expr::RepExpr(rep) => {
+            generate_rep(context, rep);
+            None
+        }
+        Expr::ListExpr(list) => todo!(),
+        Expr::BinOp(binop) => Some(generate_binop(context, binop)),
+        Expr::UnOp(unop) => Some(generate_unop(context, unop)),
+        Expr::FunctionDef(func) => todo!(),
+        Expr::ReturnExpr(ret) => todo!(),
+        _ => todo!(),
+    }
+}
+
+fn get_crustal_type(t: &Type) -> CG::Type {
+    match t {
+        Type::Int => CG::Type::new_int32(),
+        Type::String => CG::Type::new_std_string(),
+        _ => todo!(),
+    }
+}
+
+fn generate_assignment(context: &mut CG::Block, assign: &AssignmentExpr) {
+    let var = context.new_variable(
+        &assign.target.value.value,
+        get_crustal_type(&assign.target.associated_type),
+    );
+    let expr = var.to_expr();
+    let rhs = process_expression(context, &assign.value).unwrap();
+    context.assign(expr, rhs);
+}
+
+fn generate_reassignment(context: &mut CG::Block, assign: &ReassignmentExpr) {
+    let var_expr = CG::Expr::new_var(&assign.target.value, CG::Type::new_void());
+    let rhs = process_expression(context, &assign.value).unwrap();
+    context.assign(var_expr, rhs);
+}
+
+fn generate_method_call(context: &mut CG::Block, call: &MethodCallExpr) {
+    let obj_name = &call.method_name.value;
+    let args_expr = call
+        .args
+        .iter()
+        .map(|arg| process_expression(context, arg).unwrap())
+        .collect();
+    context.fn_call(obj_name, args_expr);
+}
+
+fn generate_print(context: &mut CG::Block, print: &PrintExpr) {
+    let expr = process_expression(context, &print.arg).unwrap();
+    // TODO: Print string
+}
+
+fn generate_if(context: &mut CG::Block, if_expr: &IfExpr) {
+    let cond = process_expression(context, &if_expr.condition).unwrap();
+    let if_else_expr = context.new_ifelse(&cond);
+
+    let then_block = if_else_expr.then_branch();
+    for expr in if_expr.then_block.iter() {
+        process_expression(then_block, expr).unwrap();
+    }
+    let else_block = if_else_expr.other_branch();
+    if let Some(else_vec) = &if_expr.else_block {
+        for expr in else_vec.iter() {
+            process_expression(else_block, expr).unwrap();
         }
     }
+}
 
-    pub fn generate(&mut self, ast: &Program) -> String {
-        // Add standard includes
-        self.program.add_include("bits/stdc++.h");
-
-        // Generate code for each expression
-        for expr in &ast.expressions {
-            self.generate_expression(expr);
-        }
-
-        // Generate the main function if it doesn't exist
-        if !ast
-            .expressions
-            .iter()
-            .any(|e| matches!(e, Expr::FunctionDef(f) if f.name.value == "main"))
-        {
-            self.generate_default_main();
-        }
-
-        self.program.to_string()
+fn generate_variable_name() -> String {
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    let length = rng.gen_range(5..10);
+    let mut name = String::with_capacity(length);
+    name.push(rng.gen_range(b'a'..=b'z') as char);
+    for _ in 1..length {
+        name.push(rng.gen_range(b'a'..=b'z') as char);
     }
+    name
+}
 
-    fn generate_default_main(&mut self) {
-        self.program.add_function(
-            "main",
-            cpp! {
-                int main() {
-                    return 0;
-                }
-            },
-        );
+fn generate_rep(context: &mut CG::Block, rep: &RepExpr) {
+    let cond = process_expression(context, &rep.num_iterations).unwrap();
+    // assume integer for now
+    let var_name = generate_variable_name();
+    let var_expr = context
+        .new_variable(&var_name, CG::Type::new_int32())
+        .to_expr();
+
+    // This is very stupid
+    let var_expr_copy = var_expr.clone();
+    let var_expr_copy_2 = var_expr.clone();
+    let var_expr_copy_3 = var_expr.clone();
+
+    context.assign(var_expr, CG::Expr::new_num(0));
+    let cond_expr = CG::Expr::binop(var_expr_copy, "<", cond);
+
+    let while_loop = context.new_while_loop(&cond_expr);
+    let while_loop_body = while_loop.body();
+    for expr in rep.body.iter() {
+        process_expression(while_loop_body, expr);
     }
+    while_loop_body.assign(
+        var_expr_copy_2,
+        CG::Expr::binop(var_expr_copy_3, "+", CG::Expr::new_num(1)),
+    );
+}
 
-    fn generate_expression(&mut self, expr: &Expr) {
-        match expr {
-            Expr::Integer(int) => self.generate_integer(int),
-            Expr::Float(float) => self.generate_float(float),
-            Expr::String(string) => self.generate_string(string),
-            Expr::Identifier(id) => self.generate_identifier(id),
-            Expr::AssignmentExpr(assign) => self.generate_assignment(assign),
-            Expr::MethodCallExpr(method) => self.generate_method_call(method),
-            Expr::PrintExpr(print) => self.generate_print(print),
-            Expr::IfExpr(if_expr) => self.generate_if(if_expr),
-            Expr::RepExpr(rep) => self.generate_rep(rep),
-            Expr::ListExpr(list) => self.generate_list(list),
-            Expr::BinOp(binop) => self.generate_binop(binop),
-            Expr::UnOp(unop) => self.generate_unop(unop),
-            Expr::FunctionDef(func) => self.generate_function(func),
-            Expr::ReturnExpr(ret) => self.generate_return(ret),
-            Expr::NoneExpr(_) => {} // No-op for None expressions
-        }
-    }
+fn generate_binop(context: &mut CG::Block, binop: &BinOpExpr) -> CG::Expr {
+    let left = process_expression(context, &binop.left).unwrap();
+    let right = process_expression(context, &binop.right).unwrap();
+    let op = binop.op.as_str();
+    CG::Expr::binop(left, op, right)
+}
 
-    fn type_to_cpp_type(&self, t: &Type) -> String {
-        match t {
-            Type::Int => "int".to_string(),
-            Type::Float => "double".to_string(),
-            Type::String => "std::string".to_string(),
-            Type::List(inner) => format!("std::vector<{}>", self.type_to_cpp_type(inner)),
-            Type::Tuple(_) => "auto".to_string(), // Using auto for tuples for now
-            Type::FunctionType(_, _) => "auto".to_string(), // Using auto for function types
-            Type::None => "void".to_string(),
-        }
-    }
-
-    fn generate_integer(&mut self, int: &IntegerLiteral) -> String {
-        int.value.to_string()
-    }
-
-    fn generate_float(&mut self, float: &FloatLiteral) -> String {
-        float.value.to_string()
-    }
-
-    fn generate_string(&mut self, string: &StringLiteral) -> String {
-        format!("\"{}\"", string.value.replace("\"", "\\\""))
-    }
-
-    fn generate_identifier(&mut self, id: &Identifier) -> String {
-        id.value.clone()
-    }
-
-    fn generate_print(&mut self, print: &PrintExpr) {
-        let expr = match &*print.arg {
-            Expr::String(s) => self.generate_string(s),
-            Expr::Integer(i) => self.generate_integer(i),
-            Expr::Float(f) => self.generate_float(f),
-            Expr::Identifier(id) => self.generate_identifier(id),
-            _ => "/* unsupported print expression */".to_string(),
-        };
-
-        self.program.add_statement(cpp! {
-            std::cout << ${expr} << std::endl;
-        });
-    }
-
-    fn generate_assignment(&mut self, assign: &AssignmentExpr) {
-        let var_type = self.type_to_cpp_type(&assign.target.associated_type);
-        let var_name = &assign.target.value.value;
-        let value = self.generate_expr_value(&assign.value);
-
-        self.program.add_statement(cpp! {
-            ${var_type} ${var_name} = ${value};
-        });
-    }
-
-    fn generate_expr_value(&mut self, expr: &Expr) -> String {
-        match expr {
-            Expr::Integer(i) => self.generate_integer(i),
-            Expr::Float(f) => self.generate_float(f),
-            Expr::String(s) => self.generate_string(s),
-            Expr::Identifier(id) => self.generate_identifier(id),
-            Expr::BinOp(binop) => self.generate_binop_expr(binop),
-            _ => "/* unsupported expression */".to_string(),
-        }
-    }
-
-    fn generate_binop_expr(&mut self, binop: &BinOpExpr) -> String {
-        let left = self.generate_expr_value(&binop.left);
-        let right = self.generate_expr_value(&binop.right);
-        format!("({} {} {})", left, binop.op, right)
-    }
-
-    fn generate_binop(&mut self, binop: &BinOpExpr) {
-        let expr = self.generate_binop_expr(binop);
-        self.program.add_statement(cpp! {
-            ${expr};
-        });
-    }
-
-    fn generate_unop(&mut self, unop: &UnOpExpr) {
-        let arg = self.generate_expr_value(&unop.arg);
-        let expr = format!("{}{}", unop.op, arg);
-        self.program.add_statement(cpp! {
-            ${expr};
-        });
-    }
-
-    fn generate_function(&mut self, func: &FunctionDef) {
-        let name = &func.name.value;
-        let mut params = Vec::new();
-
-        for arg in &func.args {
-            let param_type = self.type_to_cpp_type(&arg.associated_type);
-            let param_name = &arg.value.value;
-            params.push(format!("{} {}", param_type, param_name));
-        }
-
-        let params_str = params.join(", ");
-
-        self.program.add_function(
-            name,
-            cpp! {
-                void ${name}(${params_str}) {
-                    // Function body will go here
-                }
-            },
-        );
-    }
-
-    fn generate_return(&mut self, ret: &ReturnExpr) {
-        let value = self.generate_expr_value(&ret.value);
-        self.program.add_statement(cpp! {
-            return ${value};
-        });
-    }
-
-    fn generate_if(&mut self, if_expr: &IfExpr) {
-        let condition = self.generate_expr_value(&if_expr.condition);
-        self.program.add_statement(cpp! {
-            if (${condition}) {
-                // Then block will go here
-            }
-        });
-
-        if let Some(else_block) = &if_expr.else_block {
-            self.program.add_statement(cpp! {
-                else {
-                    // Else block will go here
-                }
-            });
-        }
-    }
-
-    fn generate_rep(&mut self, rep: &RepExpr) {
-        let count = self.generate_expr_value(&rep.num_iterations);
-        self.program.add_statement(cpp! {
-            for(int i = 0; i < ${count}; i++) {
-                // Loop body will go here
-            }
-        });
-    }
-
-    fn generate_list(&mut self, list: &ListExpr) {
-        // For now, just generate a comment
-        self.program.add_statement(cpp! {
-            // List expression
-        });
-    }
-
-    fn generate_method_call(&mut self, method: &MethodCallExpr) {
-        let name = &method.method_name.value;
-        let args: Vec<String> = method
-            .args
-            .iter()
-            .map(|arg| self.generate_expr_value(arg))
-            .collect();
-        let args_str = args.join(", ");
-
-        self.program.add_statement(cpp! {
-            ${name}(${args_str});
-        });
-    }
+fn generate_unop(context: &mut CG::Block, unop: &UnOpExpr) -> CG::Expr {
+    let expr = process_expression(context, &unop.arg).unwrap();
+    let op = unop.op.as_str();
+    CG::Expr::uop(op, expr)
 }

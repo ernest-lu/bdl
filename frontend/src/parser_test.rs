@@ -46,13 +46,6 @@ mod tests {
             }"#,
             Rule::function_def
         ));
-        // assert!(parse("fn empty() { }", Rule::function_def));
-        // assert!(parse(
-        //     r#"fn complex(x: float, arr: list<int>) {
-        //         print(x)
-        //     }"#,
-        //     Rule::function_def
-        // ));
     }
 
     #[test]

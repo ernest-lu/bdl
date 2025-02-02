@@ -17,6 +17,7 @@ pub enum Type {
     Int,
     Float,
     String,
+    Bool,
     List(Box<Type>),
     Tuple(Box<Type>),
     // type of parameters, return type
@@ -77,6 +78,17 @@ impl FloatLiteral {
 }
 
 #[derive(Debug, Clone)]
+pub struct BooleanLiteral {
+    pub value: bool,
+}
+
+impl BooleanLiteral {
+    pub fn new(value: bool) -> BooleanLiteral {
+        BooleanLiteral { value }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct Identifier {
     pub value: String,
 }
@@ -91,11 +103,28 @@ impl Identifier {
 pub struct AssignmentExpr {
     pub target: TypedIdentifier,
     pub value: Box<Expr>,
+    pub const_var: bool,
 }
 
 impl AssignmentExpr {
-    pub fn new(target: TypedIdentifier, value: Expr) -> AssignmentExpr {
+    pub fn new(target: TypedIdentifier, value: Expr, const_var: bool) -> AssignmentExpr {
         AssignmentExpr {
+            target,
+            value: Box::new(value),
+            const_var,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ReassignmentExpr {
+    pub target: Identifier,
+    pub value: Box<Expr>,
+}
+
+impl ReassignmentExpr {
+    pub fn new(target: Identifier, value: Expr) -> ReassignmentExpr {
+        ReassignmentExpr {
             target,
             value: Box::new(value),
         }
@@ -154,14 +183,14 @@ impl IfExpr {
 #[derive(Debug, Clone)]
 pub struct RepExpr {
     pub num_iterations: Box<Expr>,
-    pub body: Box<Expr>,
+    pub body: Vec<Expr>,
 }
 
 impl RepExpr {
-    pub fn new(num_iterations: Expr, body: Expr) -> RepExpr {
+    pub fn new(num_iterations: Expr) -> RepExpr {
         RepExpr {
             num_iterations: Box::new(num_iterations),
-            body: Box::new(body),
+            body: vec![],
         }
     }
 }
@@ -226,9 +255,11 @@ impl UnOpExpr {
 pub enum Expr {
     Integer(IntegerLiteral),
     Float(FloatLiteral),
+    Boolean(BooleanLiteral),
     String(StringLiteral),
     Identifier(Identifier),
     AssignmentExpr(AssignmentExpr),
+    ReassignmentExpr(ReassignmentExpr),
     MethodCallExpr(MethodCallExpr),
     PrintExpr(PrintExpr),
     IfExpr(IfExpr),
@@ -245,6 +276,14 @@ impl Expr {
     pub fn Integer(self) -> Option<IntegerLiteral> {
         if let Expr::Integer(i) = self {
             Some(i)
+        } else {
+            None
+        }
+    }
+
+    pub fn Boolean(self) -> Option<BooleanLiteral> {
+        if let Expr::Boolean(b) = self {
+            Some(b)
         } else {
             None
         }
@@ -277,6 +316,14 @@ impl Expr {
     pub fn AssignmentExpr(self) -> Option<AssignmentExpr> {
         if let Expr::AssignmentExpr(a) = self {
             Some(a)
+        } else {
+            None
+        }
+    }
+
+    pub fn ReassignmentExpr(self) -> Option<ReassignmentExpr> {
+        if let Expr::ReassignmentExpr(r) = self {
+            Some(r)
         } else {
             None
         }
@@ -353,9 +400,11 @@ impl Expr {
             Expr::Integer(_) => Type::Int,
             Expr::Float(_) => Type::Float,
             Expr::String(_) => Type::String,
+            Expr::Boolean(_) => Type::Bool,
             Expr::Identifier(_) => todo!(),
             Expr::ReturnExpr(_) => todo!(),
             Expr::AssignmentExpr(_) => todo!(),
+            Expr::ReassignmentExpr(_) => todo!(),
             Expr::MethodCallExpr(_) => todo!(),
             Expr::PrintExpr(_) => todo!(),
             Expr::IfExpr(_) => todo!(),

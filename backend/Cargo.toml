@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 bdl-frontend = { path = "../frontend" }
 crustal = "0.3"
+rand = "0.8"

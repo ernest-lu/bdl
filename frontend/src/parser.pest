@@ -51,9 +51,9 @@ float = @{ "-"? ~ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT+ }
 block = { "{" ~ NEWLINE ~ (expression ~ NEWLINE)* ~ "}" }
 
 // Assignment
-VAL = _{ "val" }
-VAR = _{ "var" }
-assignment = { VAL ~ typed_identifier ~ "=" ~ expression | VAR ~ typed_identifier ~ "=" ~ expression }
+var_val = { "val" | "var" }
+assignment = { var_val ~ typed_identifier ~ "=" ~ expression  }
+reassigment = { identifier ~ "=" ~ expression }
 
 // Method call
 method_call = { identifier ~ "(" ~ (expression ~ ("," ~ expression)*)? ~ ")" }

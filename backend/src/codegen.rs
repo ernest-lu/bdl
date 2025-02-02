@@ -1,4 +1,3 @@
-
 use bdl_frontend::ast::{
     AssignmentExpr, BinOpExpr, Expr, FloatLiteral, FunctionDef, Identifier, IfExpr, IntegerLiteral,
     ListExpr, MethodCallExpr, PrintExpr, ReassignmentExpr, RepExpr, ReturnExpr, StringLiteral,
@@ -6,6 +5,8 @@ use bdl_frontend::ast::{
 };
 
 use crustal as CG;
+use std::fmt::Write;
+use std::path::Path;
 
 pub fn generate(ast: &bdl_frontend::ast::Program) -> String {
     // Add standard includes
@@ -18,8 +19,10 @@ pub fn generate(ast: &bdl_frontend::ast::Program) -> String {
     let body = main_fn.body();
 
     // Generate code for each expression
-    for expr in &ast.expressions {}
-    scope.to_string()
+    for expr in &ast.expressions {
+        process_expression(body, expr);
+    }
+    main_fn.to_string()
 }
 
 enum ExprResult {
@@ -60,7 +63,8 @@ fn process_expression(context: &mut CG::Block, expr: &Expr) -> Option<CG::Expr> 
             generate_rep(context, rep);
             None
         }
-        Expr::ListExpr(list) => todo!(),
+        Expr::Identifier(id) => Some(generate_identifier(context, id)),
+        Expr::ListExpr(list) => Some(generate_list_expr(context, list)),
         Expr::BinOp(binop) => Some(generate_binop(context, binop)),
         Expr::UnOp(unop) => Some(generate_unop(context, unop)),
         Expr::FunctionDef(func) => todo!(),
@@ -69,10 +73,27 @@ fn process_expression(context: &mut CG::Block, expr: &Expr) -> Option<CG::Expr> 
     }
 }
 
+fn get_string_type(t: &Type) -> String {
+    match t {
+        Type::Int => CG::Type::new_int32().to_string(),
+        Type::String => CG::Type::new_std_string().to_string(),
+        Type::List(t) => CG::Type::new(CG::BaseType::TemplateClass(
+            "std::vector".to_string(),
+            vec![get_string_type(t)],
+        ))
+        .to_string(),
+        _ => todo!(),
+    }
+}
+
 fn get_crustal_type(t: &Type) -> CG::Type {
     match t {
         Type::Int => CG::Type::new_int32(),
         Type::String => CG::Type::new_std_string(),
+        Type::List(t) => CG::Type::new(CG::BaseType::TemplateClass(
+            "std::vector".to_string(),
+            vec![get_string_type(t)],
+        )),
         _ => todo!(),
     }
 }
@@ -174,4 +195,28 @@ fn generate_unop(context: &mut CG::Block, unop: &UnOpExpr) -> CG::Expr {
     let expr = process_expression(context, &unop.arg).unwrap();
     let op = unop.op.as_str();
     CG::Expr::uop(op, expr)
+}
+
+fn generate_list_expr(context: &mut CG::Block, list: &ListExpr) -> CG::Expr {
+    let cg_elems = list
+        .elems
+        .iter()
+        .map(|expr| process_expression(context, expr).unwrap())
+        .collect::<Vec<CG::Expr>>();
+
+    CG::Expr::Raw(format!(
+        "vector{{ {} }}",
+        cg_elems
+            .iter()
+            .map(|e| e.to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
+    ))
+}
+
+fn generate_identifier(context: &mut CG::Block, id: &Identifier) -> CG::Expr {
+    CG::Expr::Variable {
+        name: id.value.clone(),
+        ty: CG::Type::new_int32(),
+    }
 }

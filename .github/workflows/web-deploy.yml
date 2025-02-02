@@ -45,15 +45,12 @@ jobs:
       with:
         path: './web'
 
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v2
+    - name: Deploy
+      uses: peaceiris/actions-gh-pages@v3
+      # only actually deploy if pushed to master branch
+      if: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: web-demo/dist
+        force_orphan: true
+

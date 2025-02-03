@@ -36,6 +36,7 @@ jobs:
       run: |
         cd web
         wasm-pack build --target web
+        cd ..
 
     - name: Setup Pages
       uses: actions/configure-pages@v3

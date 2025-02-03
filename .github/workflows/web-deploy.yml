@@ -50,6 +50,6 @@ jobs:
       if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: web-demo
+        publish_dir: web
         force_orphan: true
 

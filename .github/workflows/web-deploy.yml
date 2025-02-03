@@ -36,7 +36,6 @@ jobs:
       run: |
         cd web
         wasm-pack build --target web
-        cd ..
         ls -la
 
     - name: Setup Pages

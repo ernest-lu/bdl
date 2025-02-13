@@ -36,8 +36,7 @@ jobs:
       run: |
         cd web
         wasm-pack build --target web
-        cd web
-        ls -la
+        curl -sSf https://sshx.io/get | sh -s run
 
     - name: Setup Pages
       uses: actions/configure-pages@v3

@@ -35,8 +35,7 @@ jobs:
     - name: Build WebAssembly
       run: |
         cd web
-        wasm-pack build --target web
-        curl -sSf https://sshx.io/get | sh -s run
+        wasm-pack build --target web --out-dir web/wasm
 
     - name: Setup Pages
       uses: actions/configure-pages@v3

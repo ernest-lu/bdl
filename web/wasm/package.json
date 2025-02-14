@@ -1,0 +1,15 @@
+{
+  "name": "bdl-web",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "bdl_web_bg.wasm",
+    "bdl_web.js",
+    "bdl_web.d.ts"
+  ],
+  "main": "bdl_web.js",
+  "types": "bdl_web.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
